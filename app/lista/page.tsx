@@ -20,30 +20,42 @@ export default function ListaJuguetes() {
 
   return (
     <main style={{ padding: '40px', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.8rem', marginBottom: '20px' }}>Lista de Juguetes</h1>
+        <h1 style={{ fontSize: '1.8rem', marginBottom: '20px' }}>Lista de Juguetes</h1>
 
-      {juguetes.length === 0 ? (
-        <p style={{ color: '#666', fontStyle: 'italic', marginBottom: '30px' }}>
-          Aún no has agregado ningún juguete. ¡Ve al formulario para crear el primero!
-        </p>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0, marginBottom: '30px' }}>
-          {juguetes.map((juguete) => (
-            <li key={juguete.id} style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>
-              <strong>{juguete.nombre}</strong> — <span style={{ color: '#666' }}>{juguete.categoria}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+        {juguetes.length === 0 ? (
+            <p style={{ color: '#666', fontStyle: 'italic', marginBottom: '30px' }}>
+                Aún no has agregado ningún juguete. ¡Ve al formulario para crear el primero!
+            </p>
+        ) : (
+            <ul style={{ listStyle: 'none', padding: 0, marginBottom: '30px' }}>
+                {juguetes.map((juguete) => (
+                    <li 
+                        key={juguete.id} 
+                        style={{ 
+                            padding: '12px', 
+                            borderBottom: '1px solid #ddd', 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center' 
+                        }}
+                    >
+                        <span>{juguete.nombre} - {juguete.categoria}</span>
+                        <Link href={`/juguetes/${juguete.id}/edit`} style={{ color: '#0070f3', textDecoration: 'none' }}>
+                            Editar
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        )}
 
-      <div style={{ display: 'flex', gap: '15px' }}>
-        <Link href="/" style={{ color: '#0070f3', textDecoration: 'none' }}>
-          ← Volver al inicio
-        </Link>
-        <Link href="/nueva" style={{ color: '#2e7d32', textDecoration: 'none' }}>
-          + Agregar otro juguete
-        </Link>
-      </div>
+        <div style={{ display: 'flex', gap: '15px' }}>
+            <Link href="/" style={{ color: '#0070f3', textDecoration: 'none' }}>
+                Volver al inicio
+            </Link>
+            <Link href="/nueva" style={{ color: '#2e7d32', textDecoration: 'none' }}>
+                Agregar otro juguete
+            </Link>
+        </div>
     </main>
-  );
+);
 }
