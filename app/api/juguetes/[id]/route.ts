@@ -39,14 +39,16 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { nombre, categoria, esFavorito } = body; // 👈 1. Extraemos esFavorito
+    const { nombre, categoria, descripcion, imagenUrl, esFavorito } = body;
 
     const jugueteActualizado = await prisma.juguete.update({
       where: { id: Number(id) },
       data: {
         nombre,
         categoria,
-        esFavorito, // 👈 2. Se lo pasamos a Prisma
+        descripcion,
+        imagenUrl,
+        esFavorito,
       },
     });
 
@@ -58,7 +60,6 @@ export async function PUT(
     );
   }
 }
-
 // 3. Eliminar un juguete por su ID (DELETE)
 export async function DELETE(
   request: Request,

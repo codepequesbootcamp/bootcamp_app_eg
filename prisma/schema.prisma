@@ -11,5 +11,8 @@ model Juguete {
   id         Int      @id @default(autoincrement())
   nombre     String
   categoria  String
+  descripcion String?  // 👈 Nuevo campo opcional
+  imagenUrl   String?  // 👈 Nuevo campo opcional
   esFavorito Boolean  @default(false)  // 👈 AQUÍ ESTÁ LO NUEVO
+  createdAt   DateTime @default(now())
 }
