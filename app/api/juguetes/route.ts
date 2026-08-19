@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma'; // 👈 Importa la instancia con el adaptador de Turso
 
 export async function GET() {
   try {
@@ -34,6 +32,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(nuevoJuguete, { status: 201 });
   } catch (error) {
+    console.error('Error POST:', error);
     return NextResponse.json(
       { error: 'Error al crear el juguete' },
       { status: 500 }

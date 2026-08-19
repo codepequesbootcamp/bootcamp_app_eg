@@ -8,14 +8,14 @@ const libsqlToken = process.env.TURSO_AUTH_TOKEN;
 let prisma: PrismaClient;
 
 if (libsqlUrl && libsqlToken) {
-const libsql = createClient({
-url: libsqlUrl,
-authToken: libsqlToken,
-});
-const adapter = new PrismaLibSql({ url: libsqlUrl, authToken: libsqlToken });
-prisma = new PrismaClient({ adapter });
+  const libsql = createClient({
+    url: libsqlUrl,
+    authToken: libsqlToken,
+  });
+  const adapter = new PrismaLibSql({ url: libsqlUrl });
+  prisma = new PrismaClient({ adapter });
 } else {
-prisma = new PrismaClient();
+  prisma = new PrismaClient();
 }
 
 export default prisma;
