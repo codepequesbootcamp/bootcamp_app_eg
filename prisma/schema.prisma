@@ -1,18 +1,19 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 model Juguete {
-  id         Int      @id @default(autoincrement())
-  nombre     String
-  categoria  String
-  descripcion String?  // 👈 Nuevo campo opcional
-  imagenUrl   String?  // 👈 Nuevo campo opcional
-  esFavorito Boolean  @default(false)  // 👈 AQUÍ ESTÁ LO NUEVO
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  categoria   String
+  descripcion String?
+  imagenUrl   String?
+  esFavorito  Boolean  @default(false)
   createdAt   DateTime @default(now())
 }

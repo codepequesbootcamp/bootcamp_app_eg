@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma'; // 👈 Importa la instancia con el adaptador de Turso
+import { prisma } from '@/lib/prisma';
+
+// 👇 Evita que Next.js intente pre-renderizar esta API en el build
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -10,10 +13,10 @@ export async function GET() {
   } catch (error) {
     console.error('Error GET:', error);
     return NextResponse.json(
-      { error: 'Error al obtener los juguetes' },
-      { status: 500 }
+    { error: 'Error al obtener los juguetes' },
+    { status: 500 }
     );
-  }
+    }
 }
 
 export async function POST(request: Request) {
