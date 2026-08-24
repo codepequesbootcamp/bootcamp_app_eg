@@ -1,43 +1,47 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// 👇 Evita que Next.js intente pre-renderizar esta API en el build
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+// PUT: Actualizar juguete o alternar favorito
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const juguetes = await prisma.juguete.findMany({
-      orderBy: { id: 'desc' },
+    const { id } = await params;
+    const body = await request.json();
+
+    const jugueteActualizado = await prisma.juguete.update({
+      where: { id: Number(id) },
+      data: body,
     });
-    return NextResponse.json(juguetes);
+
+    return NextResponse.json(jugueteActualizado);
   } catch (error) {
-    console.error('Error GET:', error);
+    console.error('Error PUT:', error);
     return NextResponse.json(
-    { error: 'Error al obtener los juguetes' },
-    { status: 500 }
+      { error: 'Error al actualizar el juguete' },
+      { status: 500 }
     );
-    }
+  }
 }
 
-export async function POST(request: Request) {
+// DELETE: Eliminar juguete
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const body = await request.json();
-    const { nombre, categoria, descripcion, imagenUrl } = body;
+    const { id } = await params;
 
-    const nuevoJuguete = await prisma.juguete.create({
-      data: {
-        nombre,
-        categoria,
-        descripcion,
-        imagenUrl,
-      },
+    await prisma.juguete.delete({
+      where: { id: Number(id) },
     });
 
-    return NextResponse.json(nuevoJuguete, { status: 201 });
+    return NextResponse.json({ message: 'Juguete eliminado con éxito' });
   } catch (error) {
-    console.error('Error POST:', error);
+    console.error('Error DELETE:', error);
     return NextResponse.json(
-      { error: 'Error al crear el juguete' },
+      { error: 'Error al eliminar el juguete' },
       { status: 500 }
     );
   }
