@@ -4,10 +4,11 @@ import { prisma } from '@/lib/prisma';
 // PUT: Actualizar juguete o alternar favorito
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: any }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
     const body = await request.json();
 
     const jugueteActualizado = await prisma.juguete.update({
@@ -28,10 +29,11 @@ export async function PUT(
 // DELETE: Eliminar juguete
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: any }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
 
     await prisma.juguete.delete({
       where: { id: Number(id) },
