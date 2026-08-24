@@ -1,79 +1,47 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-
-// 1. Obtener un juguete específico por su ID (GET)
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    const juguete = await prisma.juguete.findUnique({
-      where: { id: Number(id) },
-    });
-
-    if (!juguete) {
-      return NextResponse.json(
-        { error: 'Juguete no encontrado' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(juguete);
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Error al obtener el juguete' },
-      { status: 500 }
-    );
-  }
-}
-
-// 2. Actualizar los datos del juguete por su ID (PUT)
+// PUT: Actualizar juguete o alternar estado de favorito
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: any }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
     const body = await request.json();
-    const { nombre, categoria, descripcion, imagenUrl, esFavorito } = body;
 
     const jugueteActualizado = await prisma.juguete.update({
       where: { id: Number(id) },
-      data: {
-        nombre,
-        categoria,
-        descripcion,
-        imagenUrl,
-        esFavorito,
-      },
+      data: body,
     });
 
     return NextResponse.json(jugueteActualizado);
   } catch (error) {
+    console.error('Error PUT:', error);
     return NextResponse.json(
       { error: 'Error al actualizar el juguete' },
       { status: 500 }
     );
   }
 }
-// 3. Eliminar un juguete por su ID (DELETE)
+
+// DELETE: Eliminar un juguete
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: any }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
 
     await prisma.juguete.delete({
       where: { id: Number(id) },
     });
 
-    return NextResponse.json({ mensaje: 'Juguete eliminado correctamente' });
+    return NextResponse.json({ message: 'Juguete eliminado con éxito' });
   } catch (error) {
+    console.error('Error DELETE:', error);
     return NextResponse.json(
       { error: 'Error al eliminar el juguete' },
       { status: 500 }
