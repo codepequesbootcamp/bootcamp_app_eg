@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Juguete {
   id: number;
@@ -12,12 +13,13 @@ interface Juguete {
 }
 
 export default function PanelJuguetesPage() {
+  const router = useRouter();
   const [juguetes, setJuguetes] = useState<Juguete[]>([]);
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [imagenUrl, setImagenUrl] = useState('');
-  const [busqueda, setBusqueda] = useState(''); // 👈 Estado para el buscador
+  const [busqueda, setBusqueda] = useState('');
   
   const [idEditando, setIdEditando] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -40,6 +42,17 @@ export default function PanelJuguetesPage() {
   useEffect(() => {
     obtenerJuguetes();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      if (res.ok) {
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +133,6 @@ export default function PanelJuguetesPage() {
     }
   };
 
-  // 1. FILTRADO POR BÚSQUEDA Y 2. ORDENADO POR FAVORITOS
   const juguetesFiltradosYOrdenados = juguetes
     .filter((j) => 
       j.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -130,22 +142,32 @@ export default function PanelJuguetesPage() {
 
   return (
     <main className="p-8 max-w-xl mx-auto space-y-8">
-      {/* CABECERA */}
+      {/* CABECERA CON BOTÓN DE CERRAR SESIÓN */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800">Panel de Inventario</h1>
-        <button
-          type="button"
-          onClick={() => {
-            if (mostrarFormulario) {
-              limpiarFormulario();
-            } else {
-              setMostrarFormulario(true);
-            }
-          }}
-          className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex items-center gap-2"
-        >
-          {mostrarFormulario ? '✕ Cerrar' : '➕ Agregar Juguete'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (mostrarFormulario) {
+                limpiarFormulario();
+              } else {
+                setMostrarFormulario(true);
+              }
+            }}
+            className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex items-center gap-2 text-sm"
+          >
+            {mostrarFormulario ? '✕ Cerrar' : '➕ Agregar Juguete'}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="px-3 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 active:scale-95 transition-all shadow-sm text-sm"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </div>
 
       {/* FORMULARIO CORTINA */}
@@ -242,7 +264,6 @@ export default function PanelJuguetesPage() {
           </h2>
         </div>
 
-        {/* CAMPO DE BÚSQUEDA UBICADO DONDE INDICASTE */}
         <div className="relative">
           <input
             type="text"

@@ -4,40 +4,41 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
-try {
-const { email, password } = await request.json();
+  try {
+    const { email, password } = await request.json();
 
-const user = await prisma.user.findUnique({
-where: { email },
-});
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-if (!user) {
-return NextResponse.json(
-{ error: 'Credenciales inválidas' },
-{ status: 401 }
-);
-}
+    // 1. Verificar si el usuario existe y si está habilitado
+    if (!user || !user.enabled) {
+      return NextResponse.json(
+        { error: 'Credenciales inválidas o cuenta deshabilitada' },
+        { status: 401 }
+      );
+    }
 
-const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-if (!isPasswordValid) {
-return NextResponse.json(
-{ error: 'Credenciales inválidas' },
-{ status: 401 }
-);
-}
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Credenciales inválidas' },
+        { status: 401 }
+      );
+    }
 
-const cookieStore = await cookies();
-cookieStore.set('session', String(user.id), {
-httpOnly: true,
-path: '/',
-});
+    const cookieStore = await cookies();
+    cookieStore.set('session', String(user.id), {
+      httpOnly: true,
+      path: '/',
+    });
 
-return NextResponse.json({ message: 'Inicio de sesión exitoso' });
-} catch (error) {
-return NextResponse.json(
-{ error: 'Error al iniciar sesión' },
-{ status: 500 }
-);
-}
+    return NextResponse.json({ message: 'Inicio de sesión exitoso' });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Error al iniciar sesión' },
+      { status: 500 }
+    );
+  }
 }
