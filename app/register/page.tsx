@@ -1,94 +1,112 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function ItemsPage() {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function RegisterPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
 
-  // Cargar registros
-  const fetchItems = async () => {
+  const validate = () => {
+    const newErrors: { email?: string; password?: string } = {};
+
+    if (!email.trim()) {
+      newErrors.email = 'El correo electrónico es requerido';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Ingresa un correo electrónico válido';
+    }
+
+    if (!password) {
+      newErrors.password = 'La contraseña es requerida';
+    } else if (password.length < 8) {
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true);
+
     try {
-      const res = await fetch('/api/juguetes');
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
       const data = await res.json();
-      setItems(data);
-    } catch (err) {
-      console.error('Error al cargar datos', err);
-    } finally {
+
+      if (!res.ok) {
+        setErrors({ general: data.error || 'Error al registrar usuario' });
+        setLoading(false);
+        return;
+      }
+
+      router.push('/login');
+    } catch {
+      setErrors({ general: 'Ocurrió un error inesperado' });
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
-  // CONFIRMACIÓN Y ELIMINACIÓN
-  const handleDelete = async (id: number) => {
-    // 1. Abre el cuadro de diálogo flotante del navegador
-    const confirmed = window.confirm('¿Estás seguro que quieres eliminar esto?');
-    
-    // 2. Si presiona "Cancelar", la función se cancela de inmediato sin llamar a la API
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/juguetes/${id}`, { 
-        method: 'DELETE' 
-      });
-
-      if (res.ok) {
-        setItems(items.filter((item) => item.id !== id));
-      } else {
-        alert('Ocurrió un error al intentar eliminar.');
-      }
-    } catch (err) {
-      console.error('Error al eliminar', err);
-    }
-  };
-
-  if (loading) return <p className="p-4">Cargando...</p>;
-
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Listado de Registros</h1>
-        <Link
-          href="/juguetes/nuevo"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Crear nuevo
-        </Link>
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white p-4">
+      <div className="bg-slate-800 p-8 rounded-xl shadow-2xl border border-slate-700 w-full max-w-md">
+        <h1 className="text-2xl font-bold text-center mb-6 text-white">Registro</h1>
 
-      {/* EMPTY STATE: Muestra mensaje y botón si la lista está vacía */}
-      {items.length === 0 ? (
-        <div className="text-center py-12 border border-dashed rounded-lg">
-          <p className="text-gray-500 mb-4">No hay registros disponibles aún.</p>
-          <Link
-            href="/juguetes/nuevo"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 inline-block"
+        {errors.general && (
+          <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded mb-4 text-sm text-center">
+            {errors.general}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1 text-slate-200">
+              Correo electrónico:
+            </label>
+            <input
+              type="text"
+              value={email}
+              disabled={loading}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@correo.com"
+              className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            />
+            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-slate-200">
+              Contraseña:
+            </label>
+            <input
+              type="password"
+              value={password}
+              disabled={loading}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            />
+            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
           >
-            Crear el primero
-          </Link>
-        </div>
-      ) : (
-        /* LISTA CON BOTÓN DE ELIMINACIÓN MANTENIENDO type="button" */
-        <ul className="divide-y border rounded">
-          {items.map((item) => (
-            <li key={item.id} className="p-4 flex justify-between items-center">
-              <span>{item.nombre}</span>
-              <button
-                type="button"
-                onClick={() => handleDelete(item.id)}
-                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
-              >
-                Eliminar
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+            {loading ? 'Guardando...' : 'Registrarse'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
