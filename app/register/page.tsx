@@ -1,94 +1,94 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
-export default function RegisterPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  
-  // Estado para los errores de cada campo
-  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+export default function ItemsPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const validate = () => {
-    const newErrors: { email?: string; password?: string } = {};
-
-    // Validar email
-    if (!email.trim()) {
-      newErrors.email = 'El correo electrónico es requerido';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Ingresa un correo electrónico válido';
+  // Cargar registros
+  const fetchItems = async () => {
+    try {
+      const res = await fetch('/api/juguetes');
+      const data = await res.json();
+      setItems(data);
+    } catch (err) {
+      console.error('Error al cargar datos', err);
+    } finally {
+      setLoading(false);
     }
-
-    // Validar contraseña
-    if (!password) {
-      newErrors.password = 'La contraseña es requerida';
-    } else if (password.length < 8) {
-      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return; // Detiene el envío si hay errores de validación
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  // CONFIRMACIÓN Y ELIMINACIÓN
+  const handleDelete = async (id: number) => {
+    // 1. Abre el cuadro de diálogo flotante del navegador
+    const confirmed = window.confirm('¿Estás seguro que quieres eliminar esto?');
+    
+    // 2. Si presiona "Cancelar", la función se cancela de inmediato sin llamar a la API
+    if (!confirmed) return;
 
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const res = await fetch(`/api/juguetes/${id}`, { 
+        method: 'DELETE' 
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setErrors({ general: data.error || 'Error al registrar usuario' });
-        return;
+      if (res.ok) {
+        setItems(items.filter((item) => item.id !== id));
+      } else {
+        alert('Ocurrió un error al intentar eliminar.');
       }
-
-      router.push('/login');
     } catch (err) {
-      setErrors({ general: 'Ocurrió un error inesperado' });
+      console.error('Error al eliminar', err);
     }
   };
 
+  if (loading) return <p className="p-4">Cargando...</p>;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
-        <h1 className="text-xl font-bold">Registro</h1>
+    <div className="p-6 max-w-2xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Listado de Registros</h1>
+        <Link
+          href="/juguetes/nuevo"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Crear nuevo
+        </Link>
+      </div>
 
-        {errors.general && <p className="text-red-500 text-sm">{errors.general}</p>}
-
-        <div>
-          <label className="block text-sm">Correo electrónico:</label>
-          <input
-            type="text"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border p-2 rounded text-black"
-          />
-          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+      {/* EMPTY STATE: Muestra mensaje y botón si la lista está vacía */}
+      {items.length === 0 ? (
+        <div className="text-center py-12 border border-dashed rounded-lg">
+          <p className="text-gray-500 mb-4">No hay registros disponibles aún.</p>
+          <Link
+            href="/juguetes/nuevo"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 inline-block"
+          >
+            Crear el primero
+          </Link>
         </div>
-
-        <div>
-          <label className="block text-sm">Contraseña:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border p-2 rounded text-black"
-          />
-          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-        </div>
-
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded">
-          Registrarse
-        </button>
-      </form>
+      ) : (
+        /* LISTA CON BOTÓN DE ELIMINACIÓN MANTENIENDO type="button" */
+        <ul className="divide-y border rounded">
+          {items.map((item) => (
+            <li key={item.id} className="p-4 flex justify-between items-center">
+              <span>{item.nombre}</span>
+              <button
+                type="button"
+                onClick={() => handleDelete(item.id)}
+                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+              >
+                Eliminar
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

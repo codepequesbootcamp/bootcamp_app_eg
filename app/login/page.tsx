@@ -7,6 +7,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
 
   const validate = () => {
@@ -30,6 +31,8 @@ export default function LoginPage() {
     e.preventDefault();
     if (!validate()) return;
 
+    setLoading(true);
+
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -41,12 +44,14 @@ export default function LoginPage() {
 
       if (!res.ok) {
         setErrors({ general: data.error || 'Credenciales incorrectas' });
+        setLoading(false);
         return;
       }
 
       router.push('/nueva');
     } catch (err) {
       setErrors({ general: 'Ocurrió un error inesperado' });
+      setLoading(false);
     }
   };
 
@@ -62,8 +67,9 @@ export default function LoginPage() {
           <input
             type="text"
             value={email}
+            disabled={loading}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border p-2 rounded text-black"
+            className="w-full border p-2 rounded text-black disabled:bg-gray-100"
           />
           {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
         </div>
@@ -73,14 +79,19 @@ export default function LoginPage() {
           <input
             type="password"
             value={password}
+            disabled={loading}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border p-2 rounded text-black"
+            className="w-full border p-2 rounded text-black disabled:bg-gray-100"
           />
           {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
         </div>
 
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded">
-          Entrar
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-600 text-white p-2 rounded disabled:bg-blue-400"
+        >
+          {loading ? 'Guardando...' : 'Entrar'}
         </button>
       </form>
     </div>
