@@ -16,12 +16,24 @@ model Juguete {
   imagenUrl   String?
   esFavorito  Boolean  @default(false)
   createdAt   DateTime @default(now())
+  likes       Like[]
 }
 
 model User {
-  id      Int     @id @default(autoincrement())
-  email   String  @unique
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
   password String
-  role    String  @default("client")
-  enabled Boolean @default(true)
+  role     String  @default("client")
+  enabled  Boolean @default(true)
+  likes    Like[]
+}
+
+model Like {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  jugueteId Int
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  juguete   Juguete @relation(fields: [jugueteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jugueteId])
 }

@@ -10,6 +10,8 @@ interface Juguete {
   descripcion?: string;
   imagenUrl?: string;
   esFavorito?: boolean;
+  likesCount?: number;
+  likedByUsers?: number[];
 }
 
 const CATEGORIAS_DISPONIBLES = [
@@ -22,21 +24,24 @@ const CATEGORIAS_DISPONIBLES = [
   'Electrónicos y Videojuegos',
   'Puzzles y Rompecabezas',
   'Construcción y Bloques',
-  'Peluches'
+  'Peluches',
 ];
 
 export default function PanelJuguetesPage() {
   const router = useRouter();
   const [juguetes, setJuguetes] = useState<Juguete[]>([]);
   const [userRole, setUserRole] = useState<string>('client');
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [imagenUrl, setImagenUrl] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('TODAS');
+  const [ordenarPorLikes, setOrdenarPorLikes] = useState(false);
   const [errorCategoria, setErrorCategoria] = useState('');
-  
+
   const [idEditando, setIdEditando] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -61,6 +66,7 @@ export default function PanelJuguetesPage() {
       if (res.ok) {
         const data = await res.json();
         setUserRole(data.role ? data.role.toLowerCase() : 'client');
+        setCurrentUserId(data.id || null);
       }
     } catch (error) {
       console.error('Error obteniendo sesión:', error);
@@ -153,32 +159,68 @@ export default function PanelJuguetesPage() {
   };
 
   const toggleFavoritoFrontend = async (id: number) => {
-    const jugueteActual = juguetes.find(j => j.id === id);
+    const jugueteActual = juguetes.find((j) => j.id === id);
     if (!jugueteActual) return;
-    
+
     const nuevoEstado = !jugueteActual.esFavorito;
 
-    setJuguetes(juguetes.map((j) => {
-      if (j.id === id) {
-        return { ...j, esFavorito: nuevoEstado };
-      }
-      return j;
-    }));
+    setJuguetes(
+      juguetes.map((j) => {
+        if (j.id === id) {
+          return { ...j, esFavorito: nuevoEstado };
+        }
+        return j;
+      })
+    );
 
     try {
       await fetch(`/api/juguetes/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           nombre: jugueteActual.nombre,
           categoria: jugueteActual.categoria,
           descripcion: jugueteActual.descripcion,
           imagenUrl: jugueteActual.imagenUrl,
-          esFavorito: nuevoEstado 
+          esFavorito: nuevoEstado,
         }),
       });
     } catch (error) {
       console.error('Error guardando favorito:', error);
+    }
+  };
+
+  const handleDarLike = async (id: number) => {
+    if (!currentUserId) return;
+
+    const juguete = juguetes.find((j) => j.id === id);
+    if (!juguete) return;
+
+    const yaDioLike = juguete.likedByUsers?.includes(currentUserId);
+
+    // Actualización optimista de UI
+    setJuguetes(
+      juguetes.map((j) => {
+        if (j.id === id) {
+          const nuevosUsuarios = yaDioLike
+            ? (j.likedByUsers || []).filter((uid) => uid !== currentUserId)
+            : [...(j.likedByUsers || []), currentUserId];
+
+          return {
+            ...j,
+            likedByUsers: nuevosUsuarios,
+            likesCount: nuevosUsuarios.length,
+          };
+        }
+        return j;
+      })
+    );
+
+    try {
+      await fetch(`/api/juguetes/${id}/like`, { method: 'POST' });
+    } catch (error) {
+      console.error('Error al procesar me gusta:', error);
+      obtenerJuguetes(); // Revertir en caso de falla
     }
   };
 
@@ -187,7 +229,7 @@ export default function PanelJuguetesPage() {
 
   const juguetesFiltradosYOrdenados = juguetes
     .filter((j) => {
-      const coincideBusqueda = 
+      const coincideBusqueda =
         j.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
         j.categoria.toLowerCase().includes(busqueda.toLowerCase());
 
@@ -200,7 +242,12 @@ export default function PanelJuguetesPage() {
 
       return coincideBusqueda;
     })
-    .sort((a, b) => Number(b.esFavorito || 0) - Number(a.esFavorito || 0));
+    .sort((a, b) => {
+      if (ordenarPorLikes) {
+        return (b.likesCount || 0) - (a.likesCount || 0);
+      }
+      return Number(b.esFavorito || 0) - Number(a.esFavorito || 0);
+    });
 
   return (
     <main className="p-8 max-w-xl mx-auto space-y-8 min-h-screen bg-slate-900 text-white">
@@ -231,7 +278,7 @@ export default function PanelJuguetesPage() {
           >
             {mostrarFormulario ? '✕ Cerrar' : '➕ Agregar Juguete'}
           </button>
-          
+
           <button
             type="button"
             onClick={handleLogout}
@@ -350,7 +397,7 @@ export default function PanelJuguetesPage() {
         </div>
       </div>
 
-      {/* SECCIÓN LISTA CON CONTADOR, BUSCADOR Y FILTROS */}
+      {/* SECCIÓN LISTA */}
       <section className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -359,9 +406,21 @@ export default function PanelJuguetesPage() {
               {juguetesFiltradosYOrdenados.length}
             </span>
           </h2>
+
+          <button
+            type="button"
+            onClick={() => setOrdenarPorLikes(!ordenarPorLikes)}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
+              ordenarPorLikes
+                ? 'bg-rose-600 border-rose-500 text-white font-bold'
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {ordenarPorLikes ? '🔥 Ordenado por Likes' : 'Ordenar por Likes'}
+          </button>
         </div>
 
-        {/* BUSCADOR Y FILTRO DE CATEGORÍA */}
+        {/* BUSCADOR Y FILTROS */}
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <input
@@ -406,59 +465,85 @@ export default function PanelJuguetesPage() {
           </p>
         ) : (
           <div className="space-y-4">
-            {juguetesFiltradosYOrdenados.map((j) => (
-              <div 
-                key={j.id} 
-                className={`p-4 border rounded-xl bg-white text-gray-900 shadow-md flex gap-4 items-start transition-all ${
-                  j.esFavorito ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-slate-200'
-                }`}
-              >
-                {j.imagenUrl && (
-                  <img
-                    src={j.imagenUrl}
-                    alt={j.nombre}
-                    className="w-20 h-20 object-cover rounded-lg border border-slate-200 flex-shrink-0"
-                  />
-                )}
+            {juguetesFiltradosYOrdenados.map((j) => {
+              const dioLike = currentUserId
+                ? j.likedByUsers?.includes(currentUserId)
+                : false;
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-lg text-gray-900">{j.nombre}</p>
-                    <button
-                      type="button"
-                      onClick={() => toggleFavoritoFrontend(j.id)}
-                      className="text-xl hover:scale-125 transition-transform"
-                      title={j.esFavorito ? 'Quitar de favoritos' : 'Marcar como favorito'}
-                    >
-                      {j.esFavorito ? '⭐' : '☆'}
-                    </button>
+              return (
+                <div
+                  key={j.id}
+                  className={`p-4 border rounded-xl bg-white text-gray-900 shadow-md flex gap-4 items-start transition-all ${
+                    j.esFavorito ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-slate-200'
+                  }`}
+                >
+                  {j.imagenUrl && (
+                    <img
+                      src={j.imagenUrl}
+                      alt={j.nombre}
+                      className="w-20 h-20 object-cover rounded-lg border border-slate-200 flex-shrink-0"
+                    />
+                  )}
+
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-lg text-gray-900">{j.nombre}</p>
+                      <button
+                        type="button"
+                        onClick={() => toggleFavoritoFrontend(j.id)}
+                        className="text-xl hover:scale-125 transition-transform"
+                        title={j.esFavorito ? 'Quitar de favoritos' : 'Marcar como favorito'}
+                      >
+                        {j.esFavorito ? '⭐' : '☆'}
+                      </button>
+                    </div>
+
+                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
+                      {j.categoria}
+                    </p>
+
+                    {j.descripcion && (
+                      <p className="text-sm text-gray-600 mt-1">{j.descripcion}</p>
+                    )}
+
+                    {/* BOTÓN DE LIKE INDIVIDUAL POR USUARIO */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDarLike(j.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold active:scale-95 transition-all border ${
+                          dioLike
+                            ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                            : 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200'
+                        }`}
+                      >
+                        {dioLike ? '❤️ Te gusta' : '🤍 Me gusta'}
+                      </button>
+                      <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                        {j.likesCount || 0}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
-                    {j.categoria}
-                  </p>
-                  {j.descripcion && (
-                    <p className="text-sm text-gray-600 mt-1">{j.descripcion}</p>
+
+                  {!esCliente && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => prepararEdicion(j)}
+                        className="text-blue-600 hover:underline text-sm font-semibold"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => eliminarJuguete(j.id)}
+                        className="text-red-600 hover:underline text-sm font-semibold"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   )}
                 </div>
-
-                {!esCliente && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => prepararEdicion(j)}
-                      className="text-blue-600 hover:underline text-sm font-semibold"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => eliminarJuguete(j.id)}
-                      className="text-red-600 hover:underline text-sm font-semibold"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
