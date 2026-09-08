@@ -34,7 +34,15 @@ export async function POST(request: Request) {
       path: '/',
     });
 
-    return NextResponse.json({ message: 'Inicio de sesión exitoso' });
+    // Retorna la sesión junto con los datos básicos del usuario
+    return NextResponse.json({
+      message: 'Inicio de sesión exitoso',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Error al iniciar sesión' },

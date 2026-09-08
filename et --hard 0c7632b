@@ -1,0 +1,21 @@
+[33m0c7632b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Feat: restriccion de categorias con select, subida de imagenes base64 y filtro por categoria/favoritos
+[33ma9bcb67[m validaciones y manejo de errores
+[33m0167a41[m fix: agregar validaciones en cliente y servidor para registro y login
+[33m7e04e09[m fix: agregar validacion en servidor y ocultar hash de contraseña en registro
+[33m9b2c8dd[m roles y permisos 2
+[33m1197ca1[m roles y permisos
+[33m95c33ed[m login y registro con hashing
+[33m5f3c0d2[m Restablecer endpoints GET, POST, PUT y DELETE
+[33mb758a6c[m Fix tipos en route params para build
+[33md1068f8[m Fix PUT y DELETE en api/juguetes/[id]
+[33md551373[m error culero
+[33m2b0a774[m use custom prisma instance with turso adapter
+[33m3c4e664[m fix prisma config
+[33m7a84c0b[m use webpack for build
+[33m9ce8b41[m update build script
+[33me08e53f[m función propia parte 1.6
+[33m70c8d2a[m función propia parte 1
+[33m563973b[m data base, inicio
+[33m5353958[m proyecto Next.js y intento de avance
+[33mbcb4a6d[m Agregar mensaje de Hola Mundo
+[33mfcb3748[m Primer commit

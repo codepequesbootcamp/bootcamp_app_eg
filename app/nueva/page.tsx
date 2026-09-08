@@ -28,6 +28,7 @@ const CATEGORIAS_DISPONIBLES = [
 export default function PanelJuguetesPage() {
   const router = useRouter();
   const [juguetes, setJuguetes] = useState<Juguete[]>([]);
+  const [userRole, setUserRole] = useState<string>('client');
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -54,7 +55,20 @@ export default function PanelJuguetesPage() {
     }
   };
 
+  const obtenerUsuarioActual = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        setUserRole(data.role ? data.role.toLowerCase() : 'client');
+      }
+    } catch (error) {
+      console.error('Error obteniendo sesión:', error);
+    }
+  };
+
   useEffect(() => {
+    obtenerUsuarioActual();
     obtenerJuguetes();
   }, []);
 
@@ -86,7 +100,6 @@ export default function PanelJuguetesPage() {
 
     if (!nombre) return;
 
-    // VALIDACIÓN ESTRICTA DE CATEGORÍA
     if (!CATEGORIAS_DISPONIBLES.includes(categoria)) {
       setErrorCategoria('Debes seleccionar una categoría válida de la lista.');
       return;
@@ -169,6 +182,9 @@ export default function PanelJuguetesPage() {
     }
   };
 
+  const esCliente = userRole === 'client';
+  const esAdminOSuperAdmin = userRole === 'admin' || userRole === 'super_admin';
+
   const juguetesFiltradosYOrdenados = juguetes
     .filter((j) => {
       const coincideBusqueda = 
@@ -192,6 +208,16 @@ export default function PanelJuguetesPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-extrabold text-white tracking-tight">Panel de Inventario</h1>
         <div className="flex items-center gap-2">
+          {esAdminOSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => router.push('/admin/users')}
+              className="px-3 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-500 active:scale-95 transition-all shadow-sm text-sm"
+            >
+              👥 Usuarios
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => {
@@ -245,7 +271,6 @@ export default function PanelJuguetesPage() {
               />
             </div>
 
-            {/* SELECCIÓN STRICTA DE CATEGORÍA */}
             <div>
               <label className="block text-sm font-medium mb-1 text-slate-200">Categoría:</label>
               <select
@@ -416,20 +441,22 @@ export default function PanelJuguetesPage() {
                   )}
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => prepararEdicion(j)}
-                    className="text-blue-600 hover:underline text-sm font-semibold"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => eliminarJuguete(j.id)}
-                    className="text-red-600 hover:underline text-sm font-semibold"
-                  >
-                    Eliminar
-                  </button>
-                </div>
+                {!esCliente && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => prepararEdicion(j)}
+                      className="text-blue-600 hover:underline text-sm font-semibold"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => eliminarJuguete(j.id)}
+                      className="text-red-600 hover:underline text-sm font-semibold"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
